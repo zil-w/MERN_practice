@@ -29,9 +29,11 @@ let phonebook = {
 const expressConstructor = require('express')
 const app = expressConstructor()
 app.use(expressConstructor.json())
+app.use(expressConstructor.static('build'))
 
 const cors = require('cors')
 app.use(cors())
+
 //example of middleware 1
 // const requestLogger = (request, response, next) => {
 //   console.log('Method:', request.method)
