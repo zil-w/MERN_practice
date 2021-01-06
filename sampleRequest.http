@@ -1,0 +1,29 @@
+POST http://localhost:3001/api/notes http/1.1
+Content-Type: application/json
+
+
+{
+    "id": 4,
+    "content": "big wow",
+    "date": "2019-05-30T19:20:14.298Z",
+    "important": true
+}
+
+###
+
+DELETE http://localhost:3001/api/persons/1 http/1.1
+
+###
+
+POST http://localhost:3001/api/persons http/1.1
+Content-Type: application/json
+
+
+{
+    "name":"dan",
+    "number": "2131421241242"
+}
+
+###
+
+GET http://localhost:3001/api/persons/2 http/1.1
