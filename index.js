@@ -1,30 +1,6 @@
-let phonebook = {
-  persons:[
-    {
-      id: 1,
-      name: 'Dan',
-      number: '123123123'
-    },
-    {
-      id: 2,
-      name: 'Vlad',
-      number: '12312312424'
-    },
-    {
-      id: 3,
-      name: 'Jan',
-      number:'123123124324'
-    }
-  ]
-}
-
-//const { request } = require('Express')
-//const { request, response } = require('Express')
-//   const app = http.createServer((request, response) => {
-//     response.writeHead(200, { 'Content-Type': 'application/json' })
-//     response.end(JSON.stringify(notes))
-//   })
-
+require('dotenv').config()//so that the process.env can be used in person module
+const Person = require('./models/person')
+const mongoose = require('mongoose')
 
 const expressConstructor = require('express')
 const app = expressConstructor()
@@ -34,26 +10,9 @@ app.use(expressConstructor.static('build'))
 const cors = require('cors')
 app.use(cors())
 
-//example of middleware 1
-// const requestLogger = (request, response, next) => {
-//   console.log('Method:', request.method)
-//   console.log('Path:  ', request.path)
-//   console.log('Body:  ', request.body)
-//   console.log('---')
-//   next()
-// }
-
-//app.use(requestLogger)
-
-//example of middleware 2, this just makes every response an error 404 tho
-// const unknownEndpoint = (request, response) => {
-//   response.status(404).send({ error: 'unknown endpoint' })
-// }
-// app.use(unknownEndpoint)
-
 let morgan = require('morgan')
 
-//configuring morgan
+//configuring morgan, add a token 'body' to receive the JSON from request entity-boody
 morgan.token('body', (req, res) =>{
   if(typeof(req.body === 'object')){
     return (JSON.stringify(req.body))
@@ -63,8 +22,6 @@ morgan.token('body', (req, res) =>{
   }
 })
 
-//pre-defined format tiny + body is as follow ':method :url :status -:response-time ms :body'
-
 //app.use(morgan(':method :url :status -:response-time ms :body'))
 
 app.get('/',(request, response)=> {
@@ -72,74 +29,117 @@ app.get('/',(request, response)=> {
 })
 
 app.get('/api/persons',(request, response)=> {
-    response.json(phonebook.persons)
+    Person.find({})
+    .then(results => {
+      response.json(results)
+    })
 })
 
 app.get('/info',(request, response)=> {
-  response.send(`<p>There are ${phonebook.persons.length} entries in the phone book.</p><br/><p>${new Date()}</p>`)
+  let entriesNum = 0
+  Person.find({}).then(results=>{
+    entriesNum = results.length
+    response.send(`<p>There are ${entriesNum} entries in the phone book.</p><br/><p>${new Date()}</p>`)
+  })
 })
 
-app.get('/api/persons/:id',(request, response)=> {
-    const id = Number(request.params.id)
-    const reqPerson = phonebook.persons.find(person => person.id === id)
-    
-    if(reqPerson === undefined){
+app.get('/api/persons/:id',(request, response, next)=> {
+    Person
+    .findById(request.params.id)
+    .then(person =>{
+      console.log(person)
+      if(person !== null){
+        response.json(person)
+      }
+      else{
         response.status(404).end()
-    }
-    else{
-        response.json(reqPerson)
-    }
+      }
+    })
+    .catch(error => next(error))
+    //will we need to send a 404 here?
 })
 
-app.delete('/api/persons/:id',(request,response)=>{
-    const id = Number(request.params.id)
-    const person = phonebook.persons.find(person => person.id === id)
-    
-    if(person !== undefined){
-      phonebook.persons = phonebook.persons.filter(person => person.id !==id)
-      response.status(204).end()
-      console.log(`${person.name} has been deleted.`)
-    }
-    else{
-      response.status(404).end()
-    }
+app.delete('/api/persons/:id',(request,response, next)=>{
+    Person.findByIdAndRemove(request.params.id)//alternative would be deleteOne, and you would need to cast id to ObjectId
+    .then(res => {
+      console.log('object returned by deletion', res)
+      if(res){
+        response.status(204).end()
+      }
+      else{
+        response.status(404).end()
+      }
+    })
+    .catch(error=> next(error))
 })
 
-app.post('/api/persons', (request, response) =>{
-    //console.log('processing', request)
+app.post('/api/persons', (request, response, next) =>{
     const receivedPerson = request.body
-    //let receivedPerson = JSON.parse(request.body)
-    // let receivedPerson
-    // try{
-    //   receivedPerson = JSON.parse(request.body)
-    // }
-    // catch(e){
-    //   console.log('malformed request')
-    //   return(response.status(400).end())
-    //} //okay this fails, not only it fails but it executes the catch block everytime for some reason
 
     if(!receivedPerson.name || !receivedPerson.number){
       console.log('missing field error')
       return(response.status(400).end())
     }
-    else if(phonebook.persons.find(person => person.name === receivedPerson.name) !== undefined){
-      console.log('duplicated name error')
-      return(
-        response.status(409).json({error: 'name must be unique'}).end()
-      )
-    }
+ 
     else{
-      const newPerson = {
-        id: Math.floor(Math.random()*1000000000),
+      const newPerson = new Person({//we rely on mongoDB to generate id automatically
         name:receivedPerson.name,
         number:receivedPerson.number
-      }
+      })
 
-      phonebook.persons.push(newPerson)
-      console.log('addition successful', phonebook.persons)
-      response.status(201).end()
+      newPerson.save()
+      .then(result =>{
+        const personID = result._id.toString()
+        response.status(201).json({id:personID})
+      })
+      .catch(error =>{
+        console.log('are we receiving error? \n', error)
+        next(error)
+      })
     }
 })
+
+app.put('/api/persons/:id', (request, response, next)=>{
+  const objectId = mongoose.Types.ObjectId(request.params.id)
+  const returnAndValidatorOption = {new:true, runValidators: true, context: 'query'}
+  console.log('stuff in put body: \n', request.body, '\n id is: \n', objectId)
+
+  Person.findOneAndUpdate({_id:objectId}, request.body, returnAndValidatorOption)
+  .then(updatedPerson => {
+    if(updatedPerson){
+      response.json(updatedPerson)
+    }
+    else{
+      response.status(404).end()
+    }
+  })
+  .catch(error => next(error))
+})
+
+const undefinedPathHandler = (request, response) => {
+  response.status(404).send({error: 'unknown endpoint'})
+}
+
+app.use(undefinedPathHandler)
+
+const errorHandler = (error, request, response, next) => {
+  // console.log('error occured while processing the request, request in question: \n', request, '\n')
+  // console.log('error is: \n', error, "\n")
+  if(error.name === 'CastError'){
+    response.status(400).send({error: 'malformatted ID'})
+  }
+  else if(error.name === 'ValidationError'){
+    response.status(400).send({error: error.message})
+  }
+  else{
+    console.log('error occured while processing the request, request in question: \n', request, '\n')
+    console.log('error is: \n', error, "\n")
+    response.status(400).end()
+  }
+  next(error)
+}
+
+app.use(errorHandler)
 
 const portNum = process.env.PORT||3001
 
