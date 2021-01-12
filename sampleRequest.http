@@ -26,8 +26,8 @@ Content-Type: application/json
 
 ###
 
-GET http://localhost:3001/api/persons/5ff8d738a783ca2e849c71b6 http/1.1
-//{"_id":{"$oid":"5ff8d738a783ca2e849c71b6"},"name":"big don","number":"123213213","__v":{"$numberInt":"0"}}
+GET http://localhost:3001/api/persons/5ffa2804d2f5a144e0f7fb7b http/1.1
+
 ###
 
 PUT http://localhost:3001/api/persons/5ffa2804d2f5a144e0f7fb7b http/1.1
