@@ -10,7 +10,7 @@ React:
 
 	-axios for server communication
 
--JS in general
+	-JS in general
 
 
 MongoDB:
