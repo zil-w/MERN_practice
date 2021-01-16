@@ -4,7 +4,7 @@ if (process.argv.length < 3) {
   process.exit(-1)
 }
 
-const connectionString = `mongodb+srv://fullstackopen:${process.argv[2]}@cluster0.2tb7v.mongodb.net/Persons?retryWrites=true&w=majority`
+const connectionString = process.env.DB_CONN_STRING
 
 mongoose.connect(connectionString, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, useCreateIndex: true })
 
