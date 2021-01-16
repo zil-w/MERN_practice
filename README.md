@@ -1,4 +1,6 @@
-A small phonebook app made in the process of refreshing React, and learning MongoDB, Express and Node.
+A small phonebook app made in the process of refreshing React, and learning MongoDB, Express and Node:
+
+https://nameless-ravine-64165.herokuapp.com/
 
 Concepts learned/reviewed:
 
@@ -39,4 +41,6 @@ Node:
 
 	-creating a server instance from an Express app
 
-	-creating a server instance with vanilla HTTP requests handling 
+	-creating a server instance with vanilla HTTP requests handling
+	
+	-deploying to heroku
